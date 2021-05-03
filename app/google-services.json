@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "93765977844",
+    "project_id": "dev-ucat",
+    "storage_bucket": "dev-ucat.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:93765977844:android:904745ff5137b3891500a1",
+        "android_client_info": {
+          "package_name": "com.roarcompany.cat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "93765977844-gj7vs97jk3ffp3ln0e1461se97lhue1m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.roarcompany.cat",
+            "certificate_hash": "19e7d86fe6b85f8503f8d44302fdb7faf2076dc6"
+          }
+        },
+        {
+          "client_id": "93765977844-k2fr4efu7tagtu6id6q69gpdm9cuhhn3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3UZbzqdb7A7ohTqWYBO9WV-Im8iUKE-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "93765977844-k2fr4efu7tagtu6id6q69gpdm9cuhhn3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
