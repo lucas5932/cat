@@ -18,7 +18,9 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,8 +32,12 @@ import android.provider.Settings;
 import android.text.InputType;
 import android.util.Base64;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.ConsoleMessage;
 import android.webkit.JavascriptInterface;
 import android.webkit.JsPromptResult;
@@ -110,6 +116,9 @@ public class MainActivity extends AppCompatActivity {
 
         getDeepLink();
 
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
+
         PackageInfo packageInfo = null;
         try {
             packageInfo = getPackageManager().getPackageInfo(getPackageName(), PackageManager.GET_SIGNATURES);
@@ -142,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
             webView.setWebViewClient(new WebViewClient() {
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
 
-                    if(url.equals("https://ucat-dev.com/Login")){
+                    if(url.equals("http://test.ucat-dev.com/")){
                         webView.clearHistory();
                     }
 
@@ -309,7 +318,7 @@ public class MainActivity extends AppCompatActivity {
             String u = intent.getStringExtra("test");            if(u != null ){
                 webView.loadUrl(u);
             }else {
-                webView.loadUrl("https://ucat-dev.com");
+                webView.loadUrl("http://test.ucat-dev.com");
             }
 
         }
@@ -468,7 +477,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed(){
-        if(webView.getUrl().equals("https://ucat-dev.com/Login/main")) {
+        //https://ucat-dev.com/Login/main
+        if(webView.getUrl().equals("http://test.ucat-dev.com")) {
             if (System.currentTimeMillis() - time >= 2000) {
                 time = System.currentTimeMillis();
                 Toast.makeText(getApplicationContext(), "뒤로 버튼을 한번 더 누르면 종료합니다.", Toast.LENGTH_SHORT).show();
