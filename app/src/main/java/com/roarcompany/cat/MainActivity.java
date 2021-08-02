@@ -12,6 +12,7 @@ import androidx.core.content.FileProvider;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -39,9 +40,12 @@ import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.ConsoleMessage;
+import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
+import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebBackForwardList;
 import android.webkit.WebChromeClient;
@@ -66,7 +70,9 @@ import com.facebook.FacebookSdk;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -115,6 +121,8 @@ public class MainActivity extends AppCompatActivity {
         WebSettings webSettings = webView.getSettings();
 
         getDeepLink();
+
+        webView.setDownloadListener(new MyWebViewClient());
 
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 
@@ -451,7 +459,7 @@ public class MainActivity extends AppCompatActivity {
             pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
             pickIntent.setType("image/* video/*");
 
-            String pickTitle = "사진 가져올 방법을 선택하세요.";
+            String pickTitle = "작업공간";
             Intent chooserIntent = Intent.createChooser(pickIntent, pickTitle);
 
             // 카메라 intent 포함시키기..
@@ -496,7 +504,8 @@ public class MainActivity extends AppCompatActivity {
     @TargetApi(Build.VERSION_CODES.M)
     public void checkVerify() {
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this,Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED ||
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this,Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this,Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
@@ -551,6 +560,49 @@ public class MainActivity extends AppCompatActivity {
 //                Toast.makeText(this, "Succeed Read/Write external storage !", Toast.LENGTH_SHORT).show();
 
             }
+        }
+    }
+
+    private class MyWebViewClient extends WebViewClient implements DownloadListener {
+
+        @Override
+        public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+            Log.d(TAG, "***** onDownloadStart()");
+
+            Log.d(TAG,"***** onDownloadStart() - url : "+url);
+            Log.d(TAG,"***** onDownloadStart() - userAgent : "+userAgent);
+            Log.d(TAG,"***** onDownloadStart() - contentDisposition : "+contentDisposition);
+            Log.d(TAG,"***** onDownloadStart() - mimeType : "+mimeType);
+
+            //권한 체크
+//          if(권한 여부) {
+            //권한이 있으면 처리
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            try {
+                contentDisposition = URLDecoder.decode(contentDisposition, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            contentDisposition = contentDisposition.substring(0, contentDisposition.lastIndexOf(";"));
+            request.setMimeType(mimeType);
+
+            //------------------------COOKIE!!------------------------
+            String cookies = CookieManager.getInstance().getCookie(url);
+            request.addRequestHeader("cookie", cookies);
+            //------------------------COOKIE!!------------------------
+            request.addRequestHeader("User-Agent", userAgent);
+            request.setDescription("Downloading file...");
+            request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType));
+            request.allowScanningByMediaScanner();
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType));
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            dm.enqueue(request);
+            Toast.makeText(getApplicationContext(), "파일을 다운로드합니다.", Toast.LENGTH_LONG).show();
+
+//          } else {
+            //권한이 없으면 처리
+//          }
         }
     }
 
