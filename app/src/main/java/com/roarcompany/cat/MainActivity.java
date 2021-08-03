@@ -320,6 +320,7 @@ public class MainActivity extends AppCompatActivity {
             webSettings.setCacheMode(webSettings.LOAD_NO_CACHE); //브라우저 노캐쉬
             webSettings.setDomStorageEnabled(true); //로컬저장소 허용
             webSettings.setSaveFormData(true);
+            webSettings.setTextZoom(100);
 
 
             AndroidBridge androidBridge = new AndroidBridge(webView, MainActivity.this);
@@ -582,41 +583,28 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG,"***** onDownloadStart() - contentDisposition : "+contentDisposition);
             Log.d(TAG,"***** onDownloadStart() - mimeType : "+mimeType);
 
-            //권한 체크
-//          if(권한 여부) {
-            //권한이 있으면 처리
             if (url.startsWith("data:")) {  //when url is base64 encoded data
                 String path = createAndSaveFileFromBase64Url(url);
                 return;
             }
 
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-            try {
-                contentDisposition = URLDecoder.decode(contentDisposition, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
-            contentDisposition = contentDisposition.substring(0, contentDisposition.lastIndexOf(";"));
             request.setMimeType(mimeType);
-
-            //------------------------COOKIE!!------------------------
             String cookies = CookieManager.getInstance().getCookie(url);
             request.addRequestHeader("cookie", cookies);
-            //------------------------COOKIE!!------------------------
             request.addRequestHeader("User-Agent", userAgent);
-            request.setDescription("Downloading file...");
-            request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType));
+            request.setDescription("File downloading...");
+            String filename = URLUtil.guessFileName(url, contentDisposition, mimeType);
+            request.setTitle(filename);
             request.allowScanningByMediaScanner();
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType));
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
             DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
             dm.enqueue(request);
-            Toast.makeText(getApplicationContext(), "파일을 다운로드합니다.", Toast.LENGTH_LONG).show();
-
-//          } else {
-            //권한이 없으면 처리
-//          }
+            Toast.makeText(getApplicationContext(), "파일을 다운로드합니다", Toast.LENGTH_LONG).show();
         }
+
+
     }
 
     public String createAndSaveFileFromBase64Url(String url) {
@@ -635,25 +623,8 @@ public class MainActivity extends AppCompatActivity {
             OutputStream os = new FileOutputStream(file);
             os.write(decodedBytes);
             os.close();
-
-            //Tell the media scanner about the new file so that it is immediately available to the user.
-            MediaScannerConnection.scanFile(this,
-                    new String[]{file.toString()}, null,
-                    new MediaScannerConnection.OnScanCompletedListener() {
-                        public void onScanCompleted(String path, Uri uri) {
-                            Log.i("ExternalStorage", "Scanned " + path + ":");
-                            Log.i("ExternalStorage", "-> uri=" + uri);
-                        }
-                    });
-
-            //Set notification after download complete and add "click to view" action to that
-            String mimetype = url.substring(url.indexOf(":") + 1, url.indexOf("/"));
-            Intent intent = new Intent();
-            intent.setAction(android.content.Intent.ACTION_VIEW);
-            intent.setDataAndType(Uri.fromFile(file), (mimetype + "/*"));
-            PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
-            Toast.makeText(getApplicationContext(), "파일을 다운로드합니다.", Toast.LENGTH_LONG).show();
-
+            류
+            Toast.makeText(getApplicationContext(), "다운로드 완료", Toast.LENGTH_LONG).show();
         } catch (IOException e) {
             Log.w("ExternalStorage", "Error writing " + file, e);
             Toast.makeText(getApplicationContext(), "다운로드 오류", Toast.LENGTH_LONG).show();
