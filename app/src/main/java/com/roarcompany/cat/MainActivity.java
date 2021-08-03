@@ -6,6 +6,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
@@ -13,7 +14,11 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.DownloadManager;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -22,6 +27,7 @@ import android.content.pm.Signature;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -69,7 +75,9 @@ import com.facebook.FacebookSdk;
 
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -326,7 +334,7 @@ public class MainActivity extends AppCompatActivity {
             String u = intent.getStringExtra("test");            if(u != null ){
                 webView.loadUrl(u);
             }else {
-                webView.loadUrl("http://test.ucat-dev.com");
+                webView.loadUrl("https://test.ucat-dev.com");
             }
 
         }
@@ -486,7 +494,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed(){
         //https://ucat-dev.com/Login/main
-        if(webView.getUrl().equals("http://test.ucat-dev.com")) {
+        if(webView.getUrl().equals("https://test.ucat-dev.com/home") || webView.getUrl().equals("https://test.ucat-dev.com/")) {
             if (System.currentTimeMillis() - time >= 2000) {
                 time = System.currentTimeMillis();
                 Toast.makeText(getApplicationContext(), "뒤로 버튼을 한번 더 누르면 종료합니다.", Toast.LENGTH_SHORT).show();
@@ -577,6 +585,11 @@ public class MainActivity extends AppCompatActivity {
             //권한 체크
 //          if(권한 여부) {
             //권한이 있으면 처리
+            if (url.startsWith("data:")) {  //when url is base64 encoded data
+                String path = createAndSaveFileFromBase64Url(url);
+                return;
+            }
+
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
             try {
                 contentDisposition = URLDecoder.decode(contentDisposition, "UTF-8");
@@ -604,6 +617,49 @@ public class MainActivity extends AppCompatActivity {
             //권한이 없으면 처리
 //          }
         }
+    }
+
+    public String createAndSaveFileFromBase64Url(String url) {
+        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        String filetype = url.substring(url.indexOf("/") + 1, url.indexOf(";"));
+        String filename = System.currentTimeMillis() + "." + filetype;
+        File file = new File(path, filename);
+        try {
+            if(!path.exists())
+                path.mkdirs();
+            if(!file.exists())
+                file.createNewFile();
+
+            String base64EncodedString = url.substring(url.indexOf(",") + 1);
+            byte[] decodedBytes = Base64.decode(base64EncodedString, Base64.DEFAULT);
+            OutputStream os = new FileOutputStream(file);
+            os.write(decodedBytes);
+            os.close();
+
+            //Tell the media scanner about the new file so that it is immediately available to the user.
+            MediaScannerConnection.scanFile(this,
+                    new String[]{file.toString()}, null,
+                    new MediaScannerConnection.OnScanCompletedListener() {
+                        public void onScanCompleted(String path, Uri uri) {
+                            Log.i("ExternalStorage", "Scanned " + path + ":");
+                            Log.i("ExternalStorage", "-> uri=" + uri);
+                        }
+                    });
+
+            //Set notification after download complete and add "click to view" action to that
+            String mimetype = url.substring(url.indexOf(":") + 1, url.indexOf("/"));
+            Intent intent = new Intent();
+            intent.setAction(android.content.Intent.ACTION_VIEW);
+            intent.setDataAndType(Uri.fromFile(file), (mimetype + "/*"));
+            PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
+            Toast.makeText(getApplicationContext(), "파일을 다운로드합니다.", Toast.LENGTH_LONG).show();
+
+        } catch (IOException e) {
+            Log.w("ExternalStorage", "Error writing " + file, e);
+            Toast.makeText(getApplicationContext(), "다운로드 오류", Toast.LENGTH_LONG).show();
+        }
+
+        return file.toString();
     }
 
 }
